@@ -1,0 +1,11 @@
+[package]
+name = "can_gui"
+version = "0.1.0"
+authors = ["Chris Black <black.624@osu.edu>"]
+build = "build.rs"
+
+[dependencies]
+libc="*"
+csv="0.14.4"
+rustc-serialize="*"
+native-windows-gui = "0.2.0"
