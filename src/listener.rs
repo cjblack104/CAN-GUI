@@ -66,19 +66,24 @@ fn handle_connection(mut stream: TcpStream) {
 	let mut buffer = [0; 512];
 	stream.read(&mut buffer).unwrap();
 
-	// todo: Define protocol to use with TCP
+	// todo: Define protocol to use with TCP (because we're not using HTTP, surprise)
 	// Each unique request needs its own ID to be checked in the If statement (possibly make this a match statement)
 	// ID corresponds to UI element
-	let get = b"GET / HTTP/1.1\r\n";
-	let sleep = b"GET /sleep HTTP/1.1\r\n";
+	// Let's do something like Function BusID Bitrate CANID DLC MessageData
+	// Function determines the presence of following parameters(?)
+	// Functions Timekeeper, StartCAN, SendMessage
+	let start_timer = b"GET Timekeeper\r\n";
+	let send_message = b"GET SendMessage\r\n";
+	let start_can = b"GET StartCAN\r\n";
 
-	if buff.starts_with(get) {
-		("HTTP/1.1 200 OK\r\n\r\n", "hello,html")
-	} else if buffer.starts_with(sleep) {
-		thread::sleep(Duration::from_secs(5));
-		("HTTP/1.1 200 OK\r\n\r\n", "hello.html")
+	if buff.starts_with(start_timer) {
+		//timekeeper();
+	} else if buffer.starts_with(send_message) {
+		//send_messages();
+	} else if buffer.starts_with(start_can){
+		//start_can();
 	} else {
-		("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
+		//error
 	};
 
 	let mut file = File::open(filename).unwrap();
