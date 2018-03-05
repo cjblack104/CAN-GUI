@@ -1,8 +1,11 @@
 extern crate libc;
 extern crate rustc_serialize;
 extern crate can_gui;
+extern crate eventual;
 use libc::*;
 use can_gui::ThreadPool;
+use eventual::Timer;
+
 
 //To hide console window
 #[windows_subsystem = "windows"]
@@ -25,10 +28,9 @@ extern {
 	fn canFlushReceiveQueue(handle: i16) -> i16;
 }
 
-use common::SOCKET_PATH;
-
 use std::thread;
 use std::net::TcpListener;
+use std::sync::mpsc::Sender;
 
 
 fn main() {
@@ -117,14 +119,17 @@ fn start_can(bus : u8, bitrate : i32, mut hndl : i16) {
 		println!("Failed to go on bus. Error: {}", result);
 		return
 	}
-	let response = format!("1 0");
-	stream.write(response.as_bytes()).unwrap();
-	stream.flush().unwrap();
 }
 
 fn timekeeper(bus : u8, mut hndl : i16, id : i32, data : void, dlc : u8) {
 	//todo: Some timer stuff I guess
-	// maybe do this: https://www.reddit.com/r/rust/comments/4nvuwc/periodic_timer_in_rust/d47c1s4/
+	// maybe do this
+	let timer = Timer::new();
+	let ticks = timer.interval_ms(1000).iter();
+	for _ in ticks {
+		// execute code once a second, send results via `tx`
+		send_messages(bus, hndl, id, data, dlc);
+	}
 }
 
 // Call this in timekeeper
