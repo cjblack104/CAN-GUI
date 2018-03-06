@@ -76,14 +76,13 @@ fn handle_connection(mut stream: TcpStream) {
 	// Functions Timekeeper, StartCAN, SendMessage
 	let start_timer = b"GET Timekeeper\r\n";
 	let send_message = b"GET SendMessage\r\n";
-	let start_can = b"GET StartCAN\r\n";
+	let setup_can = b"GET StartCAN\r\n";
+	let (tx, rx) = channel();									// to start and stop timekeeper
 
-	if buff.starts_with(start_timer) {
-		//timekeeper();
-	} else if buffer.starts_with(send_message) {
-		//send_messages();
-	} else if buffer.starts_with(start_can){
-		//start_can();
+	if buffer.starts_with(start_timer) {
+		timekeeper(rx, bus, hndl, id, data, dlc);
+	} else if buffer.starts_with(setup_can){
+		start_can(bus, bitrate, hndl);
 	} else {
 		//error
 	};
@@ -121,14 +120,17 @@ fn start_can(bus : u8, bitrate : i32, mut hndl : i16) {
 	}
 }
 
-fn timekeeper(bus : u8, mut hndl : i16, id : i32, data : void, dlc : u8) {
-	//todo: Some timer stuff I guess
-	// maybe do this
+fn timekeeper(rx : Receiver<()>, bus : u8, mut hndl : i16, id : i32, data : void, dlc : u8) {
+	// todo: Some timer stuff I guess
 	let timer = Timer::new();
 	let ticks = timer.interval_ms(1000).iter();
 	for _ in ticks {
-		// execute code once a second, send results via `tx`
-		send_messages(bus, hndl, id, data, dlc);
+		// execute code once a second, receive stop timer command via rx
+		if rx.recv().unwrap() as bool {
+			return
+		} else {
+			send_messages(bus, hndl, id, data, dlc);
+		}
 	}
 }
 
@@ -138,7 +140,7 @@ fn timekeeper(bus : u8, mut hndl : i16, id : i32, data : void, dlc : u8) {
 fn send_messages(bus : u8, mut hndl : i16, id : i32, data : void, dlc : u8) {
 	let result = unsafe {canWriteWait(hndl, id, data.as_mut_ptr() as *mut c_void, dlc, 1, 10000)};
 	if result != ERROR_OK {
-		println!("Torque Message Fucked Up. Error: {}", result);
+		println!("Message Fucked Up. Error: {}", result);
 		return
 	}
 }
