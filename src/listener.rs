@@ -79,6 +79,8 @@ fn handle_connection(mut stream: TcpStream) {
 	let setup_can = b"GET StartCAN\r\n";
 	let (tx, rx) = channel();									// to start and stop timekeeper
 
+	println!("Message from Port 8080: {}", buffer);
+
 	if buffer.starts_with(start_timer) {
 		timekeeper(rx, bus, hndl, id, data, dlc);
 	} else if buffer.starts_with(setup_can){
@@ -92,6 +94,7 @@ fn handle_connection(mut stream: TcpStream) {
 
 	file.read_to_string(&mut contents).unwrap();
 
+	// respond with a confirmation
 	let response = format!("{}{}", status_line, contents);
 
 	stream.write(response.as_bytes()).unwrap();
