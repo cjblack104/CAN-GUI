@@ -8,8 +8,10 @@ use std::net::TcpStream;
 use std::net::TcpListener;
 use std::sync::mpsc::channel;
 use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
 use std::time::Duration;
 use std::io::Read;
+use std::io::Write;
 
 //To hide console window
 #[windows_subsystem = "windows"]
@@ -76,9 +78,9 @@ fn handle_connection(mut stream: TcpStream) {
 	let start_timer = b"GET Timekeeper\r\n";
 	let send_message = b"GET SendMessage\r\n";
 	let setup_can = b"GET StartCAN\r\n";
-	let (tx, rx) = channel();				// to start and stop timekeeper
+	let (tx : Sender<T>, rx : Receiver<T>) = channel();				// to start and stop timekeeper
 
-	println!("Message from Port 8080: {}", buffer);
+	//println!("Message from Port 8080: {}", buffer);
 
 	if buffer.starts_with(start_timer) {
 		//timekeeper(rx, bus, hndl, id, data, dlc);
@@ -95,7 +97,7 @@ fn handle_connection(mut stream: TcpStream) {
 	stream.flush().unwrap();
 }
 
-fn start_can(bus : u8, bitrate : i32, mut hndl : i16) {
+fn start_can(bus : u16, bitrate : i32, mut hndl : i16) {
 	unsafe {
 		hndl = canOpenChannel(bus, 0);
 		if hndl < ERROR_OK {
@@ -117,10 +119,10 @@ fn start_can(bus : u8, bitrate : i32, mut hndl : i16) {
 	}
 }
 
-fn timekeeper(rx : Receiver<()>, bus : u8, mut hndl : i16, id : i32, mut data : [u8; 8], dlc : u8) {
+fn timekeeper(rx : Receiver<()>, bus : u16, mut hndl : i16, id : u32, mut data : [u8; 8], dlc : u16) {
 	// todo: Some timer stuff I guess
 		// execute code once a second, receive stop timer command via rx
-	while rx.recv().unwrap() as bool {
+	while rx.recv().unwrap().eq(0) {
 		thread::sleep(Duration::from_secs(1));
 		send_messages(bus, hndl, id, data, dlc);
 	}
@@ -129,7 +131,7 @@ fn timekeeper(rx : Receiver<()>, bus : u8, mut hndl : i16, id : i32, mut data : 
 // Call this in timekeeper
 // Pass all message data from TCP Port into timekeeper, then here
 // Message Args: {canWriteWait(hndl, id, data, dlc, flag, timeout)}
-fn send_messages(bus : u8, mut hndl : i16, id : i32, mut data : [u8; 8], dlc : u8) {
+fn send_messages(bus : u16, mut hndl : i16, id : u32, mut data : [u8; 8], dlc : u16) {
 	let result = unsafe {canWriteWait(hndl, id, data.as_mut_ptr() as *mut c_void, dlc, 1, 10000)};
 	if result != ERROR_OK {
 		println!("Message Fucked Up. Error: {}", result);
